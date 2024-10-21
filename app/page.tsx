@@ -54,6 +54,7 @@ const Chat: React.FC = () => {
 
   const getInitialMessage = async () => {
     try {
+      console.log("/initial")
       setIsLoading(true);
       setOptions([]);
       await delay(3000);
@@ -61,6 +62,7 @@ const Chat: React.FC = () => {
       setMessages([{ content: message, sender: "Trabuli", timestamp: new Date().toISOString() }]);
       setOptions(options);
       setCurrentStep('initial');
+      
     } catch (error) {
       console.error("Error fetching initial message:", error);
     } finally {
@@ -84,6 +86,7 @@ const Chat: React.FC = () => {
         setOptions(options);
         setCurrentStep('category');
       } else if (currentStep === 'category') {
+        
         if (option === "I want to buy a product") {
           response = await fetchProduct(option);
           handleProductResponse(response);
@@ -98,9 +101,11 @@ const Chat: React.FC = () => {
           addMessage("Invalid option selected. Please choose from the available options.", "Trabuli");
         }
       } else if (currentStep === 'makeup' || currentStep === 'trend') {
+        
         response = await fetchTrend(option);
         handleTrendResponse(response);
       } else if (currentStep === 'product') {
+        
         response = await fetchProduct(option);
         handleProductResponse(response);
       }

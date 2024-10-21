@@ -15,7 +15,7 @@ interface Message {
   sender: string;
   timestamp: string;
 }
-
+//product
 interface Product {
   name: string;
   description: string;

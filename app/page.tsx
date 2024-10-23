@@ -54,11 +54,12 @@ const Chat: React.FC = () => {
 
   const getInitialMessage = async () => {
     try {
-      console.log("/initial")
+      console.log("Request: /initial");  // Added logging
       setIsLoading(true);
       setOptions([]);
       await delay(3000);
       const { message, options } = await fetchInitialMessage();
+      console.log("Initial Response:", { message, options });  // Added logging
       setMessages([{ content: message, sender: "Trabuli", timestamp: new Date().toISOString() }]);
       setOptions(options);
       setCurrentStep('initial');
@@ -76,37 +77,53 @@ const Chat: React.FC = () => {
       setOptions([]);
       addMessage(option, "User");
       await delay(3000);
-
+  
+      console.log("Selected Option:", option);
+  
+      // Check if it's one of the special options
+      const specialOptions = [
+        "I want to search for latest Trends",
+        "I want to search for latest trends",
+        "I want to buy for an Occasion",
+        "I want to buy a product"
+      ];
+  
+      if (specialOptions.includes(option)) {
+        console.log("Request: /makeup with option:", option);
+        const response = await fetchMakeup(option);
+        console.log("Makeup Response:", response);
+        handleMakeupResponse(response);
+        return;
+      }
+  
       let response;
       if (currentStep === 'initial') {
+        console.log("Request: /category with option:", option);
         response = await fetchCategory(option);
+        console.log("Category Response:", response);
         const { message, options } = response;
         addMessage(message, "Trabuli");
         setCategoryOptions(options);
         setOptions(options);
         setCurrentStep('category');
       } else if (currentStep === 'category') {
-        
-        if (option === "I want to buy a product") {
-          response = await fetchProduct(option);
-          handleProductResponse(response);
-        } else if (categoryOptions.includes(option)) {
+        if (categoryOptions.includes(option)) {
+          console.log("Request: /makeup with option:", option);
           response = await fetchMakeup(option);
-          const { message, options } = response;
-          addMessage(message, "Trabuli");
-          setOptions(options);
-          setCurrentStep('makeup');
-          setIsFormEnabled(true);
+          console.log("Makeup Response:", response);
+          handleMakeupResponse(response);
         } else {
           addMessage("Invalid option selected. Please choose from the available options.", "Trabuli");
         }
       } else if (currentStep === 'makeup' || currentStep === 'trend') {
-        
+        console.log("Request: /trend with option:", option);
         response = await fetchTrend(option);
+        console.log("Trend Response:", response);
         handleTrendResponse(response);
       } else if (currentStep === 'product') {
-        
+        console.log("Request: /product with option:", option);
         response = await fetchProduct(option);
+        console.log("Product Response:", response);
         handleProductResponse(response);
       }
     } catch (error) {
@@ -118,21 +135,25 @@ const Chat: React.FC = () => {
 
   const handleMessageSend = async () => {
     if (!messageInput || !isFormEnabled) return;
-
+  
     setIsSending(true);
     setIsLoading(true);
     setOptions([]);
     addMessage(messageInput, "User");
     setMessageInput("");
-
+  
     try {
       await delay(3000);
       let response;
       if (currentStep === 'product') {
+        console.log("Request: /product with message:", messageInput);  // Added logging
         response = await fetchProduct(messageInput);
+        console.log("Product Response:", response);  // Added logging
         handleProductResponse(response);
       } else {
+        console.log("Request: /trend with message:", messageInput);  // Added logging
         response = await fetchTrend(messageInput);
+        console.log("Trend Response:", response);  // Added logging
         handleTrendResponse(response);
       }
     } catch (error) {
@@ -144,7 +165,28 @@ const Chat: React.FC = () => {
     }
   };
 
+  const handleMakeupResponse = (data: { message: string; options?: string[]; products?: Product[] }) => {
+    console.log("Processing Makeup Response:", data);
+    const { message, options, products } = data;
+    addMessage(message, "Trabuli");
+  
+    if (options && options.length > 0) {
+      // Handle options response
+      setOptions(options);
+      setCurrentStep('makeup');
+      setIsFormEnabled(true);
+      setProductsFetched(false); // Reset products state
+    } else if (products !== undefined) {
+      // Handle products response (like regular products)
+      setProductList(products);
+      setProductsFetched(true);
+      setIsFormEnabled(true);
+      setCurrentStep('product');
+      setOptions([]);
+    }
+  };
   const handleTrendResponse = (data: { message: string; products?: string[]; options?: string[]; image_url?: string }) => {
+    console.log("Processing Trend Response:", data);  // Added logging
     const { message, products, options, image_url } = data;
     addMessage(message, "Trabuli");
 
@@ -169,6 +211,7 @@ const Chat: React.FC = () => {
   };
 
   const handleProductResponse = (data: { message: string; products: Product[] }) => {
+    console.log("Processing Product Response:", data);  // Added logging
     const { message, products } = data;
     addMessage(message, "Trabuli");
 
@@ -274,7 +317,13 @@ const Chat: React.FC = () => {
                   </div>
                 ))}
               </div>
+              
             )}
+             {/* {productsFetched && productList.length === 0 && (
+              <div className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
+                <p className="text-gray-700">No products found.</p>
+              </div>
+            )} */}
             <div ref={messagesEndRef} />
           </div>
           {!isLoading && options.length > 0 && (

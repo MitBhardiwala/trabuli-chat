@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
 import ReactMarkdown from "@uiw/react-markdown-preview";
 import { Poppins } from "next/font/google";
-import Image from 'next/image';
-  
+import Image from "next/image";
+
 const font = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
   subsets: ["latin"],
@@ -30,7 +30,9 @@ const Chat: React.FC = () => {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isFormEnabled, setIsFormEnabled] = useState<boolean>(false);
-  const [currentStep, setCurrentStep] = useState<'initial' | 'category' | 'makeup' | 'trend'>('initial');
+  const [currentStep, setCurrentStep] = useState<
+    "initial" | "category" | "makeup" | "trend"
+  >("initial");
   const [products, setProducts] = useState<Product[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,9 +57,15 @@ const Chat: React.FC = () => {
       console.log("/start endpoint called");
       const response = await axios.get(`${apiUrl}/chat/start`);
       const { message, options } = response.data;
-      setMessages([{ content: message, sender: "Trabuli", timestamp: new Date().toISOString() }]);
+      setMessages([
+        {
+          content: message,
+          sender: "Trabuli",
+          timestamp: new Date().toISOString(),
+        },
+      ]);
       setOptions(options);
-      setCurrentStep('initial');
+      setCurrentStep("initial");
     } catch (error) {
       console.error("Error fetching initial message:", error);
     } finally {
@@ -70,32 +78,39 @@ const Chat: React.FC = () => {
       setIsLoading(true);
       setOptions([]);
       addMessage(option, "User");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       let response;
-      if (currentStep === 'initial') {
+      if (currentStep === "initial") {
         console.log("/category endpoint called");
         console.log(option);
-        response = await axios.post(`${apiUrl}/chat/category`, { choice: option });
+        response = await axios.post(`${apiUrl}/chat/category`, {
+          choice: option,
+        });
         const { message, options } = response.data;
         addMessage(message, "Trabuli");
         setCategoryOptions(options);
         setOptions(options);
-        setCurrentStep('category');
-      } else if (currentStep === 'category') {
+        setCurrentStep("category");
+      } else if (currentStep === "category") {
         if (categoryOptions.includes(option)) {
           console.log("/makeup endpoint called");
           console.log(option);
-          response = await axios.post(`${apiUrl}/chat/makeup`, { choice: option });
+          response = await axios.post(`${apiUrl}/chat/makeup`, {
+            choice: option,
+          });
           const { message, options } = response.data;
           addMessage(message, "Trabuli");
           setOptions(options);
-          setCurrentStep('makeup');
+          setCurrentStep("makeup");
           setIsFormEnabled(true);
         } else {
-          addMessage("Invalid option selected. Please choose from the available options.", "Trabuli");
+          addMessage(
+            "Invalid option selected. Please choose from the available options.",
+            "Trabuli"
+          );
         }
-      } else if (currentStep === 'makeup' || currentStep === 'trend') {
+      } else if (currentStep === "makeup" || currentStep === "trend") {
         console.log("/trend endpoint called");
         console.log(option);
         response = await axios.post(`${apiUrl}/chat/trend`, { choice: option });
@@ -118,33 +133,43 @@ const Chat: React.FC = () => {
     setMessageInput("");
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       console.log("/trend endpoint called");
-      console.log(messageInput)
-      const response = await axios.post(`${apiUrl}/chat/trend`, { choice: messageInput });
+      console.log(messageInput);
+      const response = await axios.post(`${apiUrl}/chat/trend`, {
+        choice: messageInput,
+      });
       handleTrendResponse(response.data);
     } catch (error) {
       console.error("Error sending message:", error);
-      addMessage("I'm sorry, but there was an error processing your message. Please try again later.", "Trabuli");
+      addMessage(
+        "I'm sorry, but there was an error processing your message. Please try again later.",
+        "Trabuli"
+      );
     } finally {
       setIsSending(false);
       setIsLoading(false);
     }
   };
 
-  const handleTrendResponse = (data: { message: string; products?: string[]; options?: string[]; image_url?: string }) => {
+  const handleTrendResponse = (data: {
+    message: string;
+    products?: string[];
+    options?: string[];
+    image_url?: string;
+  }) => {
     const { message, products, options, image_url } = data;
     addMessage(message, "Trabuli");
-    
+
     if (options && options.length > 0) {
       setOptions(options);
-      setCurrentStep('trend');
+      setCurrentStep("trend");
       setIsFormEnabled(true);
       setProductsFetched(false);
     } else {
       setProductsFetched(true);
       if (products && products.length > 0) {
-        setProducts(products.map(name => ({ name })));
+        setProducts(products.map((name) => ({ name })));
         setImageUrl(image_url || null);
       } else {
         setProducts([]);
@@ -152,7 +177,7 @@ const Chat: React.FC = () => {
         // addMessage("No products found for this trend.", "Trabuli");
       }
       setIsFormEnabled(false);
-      setCurrentStep('initial');
+      setCurrentStep("initial");
       setOptions([]);
     }
   };
@@ -163,7 +188,7 @@ const Chat: React.FC = () => {
       sender,
       timestamp: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, newMessage]);
+    setMessages((prev) => [...prev, newMessage]);
   };
 
   return (
@@ -182,11 +207,17 @@ const Chat: React.FC = () => {
                 }`}
               >
                 {message.sender === "Trabuli" && (
-                  <img src="/images/bot_image.png" alt="Bot" className="w-10 h-10 rounded-full" />
+                  <img
+                    src="/images/bot_image.png"
+                    alt="Bot"
+                    className="w-10 h-10 rounded-full"
+                  />
                 )}
                 <div
                   className={`markdown max-w-[70%] ${
-                    message.sender === "User" ? "bg-zinc-700/25" : "bg-zinc-500/25"
+                    message.sender === "User"
+                      ? "bg-zinc-700/25"
+                      : "bg-zinc-500/25"
                   } p-3 rounded-md`}
                 >
                   <ReactMarkdown
@@ -195,11 +226,16 @@ const Chat: React.FC = () => {
                     style={{ background: "transparent" }}
                   />
                   <small className="text-sm">
-                    {message.sender} - {new Date(message.timestamp).toLocaleTimeString()}
+                    {message.sender} -{" "}
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </small>
                 </div>
                 {message.sender === "User" && (
-                  <img src="/images/user_image.png" alt="User" className="w-10 h-10 rounded-full" />
+                  <img
+                    src="/images/user_image.png"
+                    alt="User"
+                    className="w-10 h-10 rounded-full"
+                  />
                 )}
               </div>
             ))}
@@ -214,20 +250,22 @@ const Chat: React.FC = () => {
               </div>
             )} */}
             {productsFetched && products.length > 0 && (
-  <div className="bg-zinc-800/25 p-4 rounded-md">
-    <h3 className="text-lg font-semibold mb-2">Recommended Products:</h3>
-    <ul className="list-disc pl-5">
-      {products.map((product, index) => (
-        <li key={index}>{product.name}</li>
-      ))}
-    </ul>
-  </div>
-)}
-{productsFetched && products.length === 0 && (
-  <div className="bg-zinc-800/25 p-4 rounded-md">
-    <p>No products found for this trend.</p>
-  </div>
-)}
+              <div className="bg-zinc-800/25 p-4 rounded-md">
+                <h3 className="text-lg font-semibold mb-2">
+                  Recommended Products:
+                </h3>
+                <ul className="list-disc pl-5">
+                  {products.map((product, index) => (
+                    <li key={index}>{product.name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {productsFetched && products.length === 0 && (
+              <div className="bg-zinc-800/25 p-4 rounded-md">
+                <p>No products found for this trend.</p>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
           {!isLoading && options.length > 0 && (
@@ -246,7 +284,13 @@ const Chat: React.FC = () => {
           )}
         </div>
       </div>
-      <form onSubmit={(e) => { e.preventDefault(); handleMessageSend(); }} className="flex px-8 pb-6 pt-4 items-stretch gap-2">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleMessageSend();
+        }}
+        className="flex px-8 pb-6 pt-4 items-stretch gap-2"
+      >
         <input
           type="text"
           placeholder="Type your message here..."

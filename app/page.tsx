@@ -40,6 +40,8 @@ const Chat: React.FC = () => {
   const [productsFetched, setProductsFetched] = useState<boolean>(false);
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+  //hemlo
+
   useEffect(() => {
     getInitialMessage();
   }, []);

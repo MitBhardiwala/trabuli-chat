@@ -21,6 +21,7 @@ interface Product {
   description: string;
   price: string;
   url: string;
+  photo_url:string;
 }
 
 const Chat: React.FC = () => {
@@ -301,31 +302,27 @@ const Chat: React.FC = () => {
               </div>
             )}
             {productsFetched && productList.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                 {productList.map((product, index) => (
                   <div key={index} className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
                     <h3 className="text-lg font-semibold mb-2 text-pink-600">{product.name}</h3>
-                    <p className="text-gray-700 mb-2">{product.description}</p>
+                    <div className="flex justify-center mb-2 py-1">
+                      <img 
+                        src={product.photo_url || "/images/sample_product.png"} 
+                        alt={product.name}
+                        className="w-full h-48 object-cover rounded-md"
+                      />
+                    </div>
+                    {/* <p className="text-gray-700 mb-2">{product.description}</p> */}
                     <div className="flex justify-between items-center">
                       <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Buy Product</a>
                       <span className="text-green-600 font-semibold">{product.price}</span>
                     </div>
-                    {/* <button
-                      onClick={() => handleProductSelection(product)}
-                      className="mt-2 w-full text-sm p-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors"
-                    >
-                      Select Product
-                    </button> */}
                   </div>
                 ))}
               </div>
-              
             )}
-             {/* {productsFetched && productList.length === 0 && (
-              <div className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
-                <p className="text-gray-700">No products found.</p>
-              </div>
-            )} */}
+             
             <div ref={messagesEndRef} />
           </div>
           {!isLoading && options.length > 0 && (

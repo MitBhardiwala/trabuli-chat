@@ -214,15 +214,21 @@ const Chat: React.FC = () => {
   };
 
   const handleProductResponse = (data: { message: string; products: Product[] }) => {
-    // console.log("Processing Product Response:", data);  // Added logging
     const { message, products } = data;
     addMessage(message, "Trabuli");
 
-    setProductList(products);
+    // Sort products: ones with photo_url first, then ones without
+    const sortedProducts = [...products].sort((a, b) => {
+        if (a.photo_url && !b.photo_url) return -1;
+        if (!a.photo_url && b.photo_url) return 1;
+        return 0;
+    });  
+
+    setProductList(sortedProducts);
     setProductsFetched(true);
     setIsFormEnabled(true);
     setCurrentStep('product');
-  };
+};
 
   const handleProductSelection = (product: Product) => {
     addMessage(`Selected product: ${product.name}`, "User");
@@ -302,26 +308,29 @@ const Chat: React.FC = () => {
               </div>
             )}
             {productsFetched && productList.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                {productList.map((product, index) => (
-                  <div key={index} className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
-                    <h3 className="text-lg font-semibold mb-2 text-pink-600">{product.name}</h3>
-                    <div className="flex justify-center mb-2 py-1">
-                      <img 
-                        src={product.photo_url || "/images/sample_product.png"} 
-                        alt={product.name}
-                        className="w-full h-48 object-cover rounded-md"
-                      />
-                    </div>
-                    {/* <p className="text-gray-700 mb-2">{product.description}</p> */}
-                    <div className="flex justify-between items-center">
-                      <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Buy Product</a>
-                      <span className="text-green-600 font-semibold">{product.price}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+    {productList.map((product, index) => (
+      <div key={index} className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
+        <h3 className="text-lg font-semibold mb-2 text-pink-600">{product.name}</h3>
+        {product.photo_url ? (
+          <div className="w-[200px] h-[200px] mx-auto mb-2">
+            <img 
+              src={product.photo_url} 
+              alt={product.name}
+              className="w-full h-full object-contain rounded-md"
+            />
+          </div>
+        ) : (
+          <p className="text-gray-700 mb-2">{product.description}</p>
+        )}
+        <div className="flex justify-between items-center">
+          <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Buy Product</a>
+          <span className="text-green-600 font-semibold">{product.price}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
              
             <div ref={messagesEndRef} />
           </div>

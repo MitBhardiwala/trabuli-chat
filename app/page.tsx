@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchInitialMessage, fetchCategory, fetchMakeup, fetchTrend,fetchProduct } from './api';
+import { fetchInitialMessage, fetchCategory, fetchMakeup, fetchTrend, fetchProduct } from './api';
 import ReactMarkdown from "@uiw/react-markdown-preview";
 import { Poppins } from "next/font/google";
 import Image from 'next/image';
@@ -14,14 +14,15 @@ interface Message {
   content: string;
   sender: string;
   timestamp: string;
+  products?: Product[]; // Add products to message interface
 }
-//product
+
 interface Product {
   name: string;
   description: string;
   price: string;
   url: string;
-  photo_url:string;
+  photo_url: string;
 }
 
 const Chat: React.FC = () => {
@@ -41,8 +42,6 @@ const Chat: React.FC = () => {
   const [productsFetched, setProductsFetched] = useState<boolean>(false);
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  //hemlo
-
   useEffect(() => {
     getInitialMessage();
   }, []);
@@ -55,14 +54,13 @@ const Chat: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // Rest of the existing functions remain the same until handleProductResponse
   const getInitialMessage = async () => {
     try {
-      // console.log("Request: /initial");  // Added logging
       setIsLoading(true);
       setOptions([]);
       await delay(3000);
       const { message, options } = await fetchInitialMessage();
-      // console.log("Initial Response:", { message, options });  // Added logging
       setMessages([{ content: message, sender: "Trabuli", timestamp: new Date().toISOString() }]);
       setOptions(options);
       setCurrentStep('initial');
@@ -73,6 +71,15 @@ const Chat: React.FC = () => {
       setIsLoading(false);
     }
   };
+  const addMessage = (content: string, sender: string, products?: Product[]) => {
+    const newMessage: Message = {
+      content,
+      sender,
+      timestamp: new Date().toISOString(),
+      products
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
 
   const handleOptionClick = async (option: string) => {
     try {
@@ -81,9 +88,6 @@ const Chat: React.FC = () => {
       addMessage(option, "User");
       await delay(3000);
   
-      // console.log("Selected Option:", option);
-  
-      // Check if it's one of the special options
       const specialOptions = [
         "I want to search for latest Trends",
         "I want to search for latest trends",
@@ -92,18 +96,14 @@ const Chat: React.FC = () => {
       ];
   
       if (specialOptions.includes(option)) {
-        // console.log("Request: /makeup with option:", option);
         const response = await fetchMakeup(option);
-        // console.log("Makeup Response:", response);
         handleMakeupResponse(response);
         return;
       }
   
       let response;
       if (currentStep === 'initial') {
-        // console.log("Request: /category with option:", option);
         response = await fetchCategory(option);
-        // console.log("Category Response:", response);
         const { message, options } = response;
         addMessage(message, "Trabuli");
         setCategoryOptions(options);
@@ -111,22 +111,16 @@ const Chat: React.FC = () => {
         setCurrentStep('category');
       } else if (currentStep === 'category') {
         if (categoryOptions.includes(option)) {
-          // console.log("Request: /makeup with option:", option);
           response = await fetchMakeup(option);
-          // console.log("Makeup Response:", response);
           handleMakeupResponse(response);
         } else {
           addMessage("Invalid option selected. Please choose from the available options.", "Trabuli");
         }
       } else if (currentStep === 'makeup' || currentStep === 'trend') {
-        // console.log("Request: /trend with option:", option);
         response = await fetchTrend(option);
-        // console.log("Trend Response:", response);
         handleTrendResponse(response);
       } else if (currentStep === 'product') {
-        // console.log("Request: /product with option:", option);
         response = await fetchProduct(option);
-        // console.log("Product Response:", response);
         handleProductResponse(response);
       }
     } catch (error) {
@@ -149,14 +143,10 @@ const Chat: React.FC = () => {
       await delay(3000);
       let response;
       if (currentStep === 'product') {
-        // console.log("Request: /product with message:", messageInput);  // Added logging
         response = await fetchProduct(messageInput);
-        // console.log("Product Response:", response);  // Added logging
         handleProductResponse(response);
       } else {
-        // console.log("Request: /trend with message:", messageInput);  // Added logging
         response = await fetchTrend(messageInput);
-        // console.log("Trend Response:", response);  // Added logging
         handleTrendResponse(response);
       }
     } catch (error) {
@@ -169,27 +159,22 @@ const Chat: React.FC = () => {
   };
 
   const handleMakeupResponse = (data: { message: string; options?: string[]; products?: Product[] }) => {
-    // console.log("Processing Makeup Response:", data);
+
+    
     const { message, options, products } = data;
     addMessage(message, "Trabuli");
-  
+      
     if (options && options.length > 0) {
-      // Handle options response
       setOptions(options);
       setCurrentStep('makeup');
       setIsFormEnabled(true);
-      setProductsFetched(false); // Reset products state
+      setProductsFetched(false);
     } else if (products !== undefined) {
-      // Handle products response (like regular products)
-      setProductList(products);
-      setProductsFetched(true);
-      setIsFormEnabled(true);
-      setCurrentStep('product');
-      setOptions([]);
+      handleProductResponse({ message, products });
     }
   };
+
   const handleTrendResponse = (data: { message: string; products?: string[]; options?: string[]; image_url?: string }) => {
-    // console.log("Processing Trend Response:", data);  // Added logging
     const { message, products, options, image_url } = data;
     addMessage(message, "Trabuli");
 
@@ -213,39 +198,37 @@ const Chat: React.FC = () => {
     }
   };
 
+
   const handleProductResponse = (data: { message: string; products: Product[] }) => {
     const { message, products } = data;
-    addMessage(message, "Trabuli");
-
+    
     // Sort products: ones with photo_url first, then ones without
     const sortedProducts = [...products].sort((a, b) => {
         if (a.photo_url && !b.photo_url) return -1;
         if (!a.photo_url && b.photo_url) return 1;
         return 0;
-    });  
+    });
 
-    setProductList(sortedProducts);
-    setProductsFetched(true);
-    setIsFormEnabled(true);
-    setCurrentStep('product');
-};
+    // Add the message with products attached
+    if(products.length>0){
 
-  const handleProductSelection = (product: Product) => {
-    addMessage(`Selected product: ${product.name}`, "User");
-    setIsFormEnabled(false);
-    setCurrentStep('initial');
-    setOptions([]);
-    setProductsFetched(false);
-  };
-
-
-  const addMessage = (content: string, sender: string) => {
+    
     const newMessage: Message = {
-      content,
-      sender,
+      content: message,
+      sender: "Trabuli",
       timestamp: new Date().toISOString(),
+      products: sortedProducts // Attach products to the message
     };
     setMessages(prev => [...prev, newMessage]);
+    setProductList(sortedProducts);
+    
+
+
+  }
+
+  setProductsFetched(true);
+    setIsFormEnabled(true);
+    setCurrentStep('product');
   };
 
   return (
@@ -257,33 +240,59 @@ const Chat: React.FC = () => {
         <div className="py-4 px-8">
           <div className="space-y-3">
             {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex items-start space-x-2 ${
-                  message.sender === "User" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.sender === "Trabuli" && (
-                  <img src="/images/bot_image.png" alt="Bot" className="w-10 h-10 rounded-full" />
-                )}
+              <div key={index}>
                 <div
-                  className={`markdown max-w-[70%] ${
-                    message.sender === "User" ? "bg-pink-200" : "bg-pink-200"
-                  } p-3 rounded-md shadow-sm`}
+                  className={`flex items-start space-x-2 ${
+                    message.sender === "User" ? "justify-end" : "justify-start"
+                  }`}
                 >
-                   <div className="force-black-text">
-                    <ReactMarkdown
-                      className={`${font.className} message-content`}
-                      source={message.content}
-                      style={{ color: 'black !important', background: "transparent" }}
-                    />
+                  {message.sender === "Trabuli" && (
+                    <img src="/images/bot_image.png" alt="Bot" className="w-10 h-10 rounded-full" />
+                  )}
+                  <div
+                    className={`markdown max-w-[70%] ${
+                      message.sender === "User" ? "bg-pink-200" : "bg-pink-200"
+                    } p-3 rounded-md shadow-sm`}
+                  >
+                    <div className="force-black-text">
+                      <ReactMarkdown
+                        className={`${font.className} message-content`}
+                        source={message.content}
+                        style={{ color: 'black !important', background: "transparent" }}
+                      />
+                    </div>
+                    <small className="text-sm text-gray-500 font-medium">
+                      {message.sender} - {new Date(message.timestamp).toLocaleTimeString()}
+                    </small>
                   </div>
-                  <small className="text-sm text-gray-500 font-medium">
-                    {message.sender} - {new Date(message.timestamp).toLocaleTimeString()}
-                  </small>
+                  {message.sender === "User" && (
+                    <img src="/images/user_image.png" alt="User" className="w-10 h-10 rounded-full" />
+                  )}
                 </div>
-                {message.sender === "User" && (
-                  <img src="/images/user_image.png" alt="User" className="w-10 h-10 rounded-full" />
+                {/* Display products if they exist in the message */}
+                {message.products && message.products.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    {message.products.map((product, productIndex) => (
+                      <div key={productIndex} className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
+                        <h3 className="text-lg font-semibold mb-2 text-pink-600">{product.name}</h3>
+                        {product.photo_url ? (
+                          <div className="w-[200px] h-[200px] mx-auto mb-2">
+                            <img 
+                              src={product.photo_url} 
+                              alt={product.name}
+                              className="w-full h-full object-contain rounded-md"
+                            />
+                          </div>
+                        ) : (
+                          <p className="text-gray-700 mb-2">{product.description}</p>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Buy Product</a>
+                          <span className="text-green-600 font-semibold">{product.price}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
@@ -302,36 +311,6 @@ const Chat: React.FC = () => {
                 </ul>
               </div>
             )}
-            {trendProductsFetched && trendProducts.length === 0 && (
-              <div className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
-                <p className="text-gray-700">No products found for this trend.</p>
-              </div>
-            )}
-            {productsFetched && productList.length > 0 && (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-    {productList.map((product, index) => (
-      <div key={index} className="bg-white p-4 rounded-md shadow-sm border border-pink-100">
-        <h3 className="text-lg font-semibold mb-2 text-pink-600">{product.name}</h3>
-        {product.photo_url ? (
-          <div className="w-[200px] h-[200px] mx-auto mb-2">
-            <img 
-              src={product.photo_url} 
-              alt={product.name}
-              className="w-full h-full object-contain rounded-md"
-            />
-          </div>
-        ) : (
-          <p className="text-gray-700 mb-2">{product.description}</p>
-        )}
-        <div className="flex justify-between items-center">
-          <a href={product.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Buy Product</a>
-          <span className="text-green-600 font-semibold">{product.price}</span>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-             
             <div ref={messagesEndRef} />
           </div>
           {!isLoading && options.length > 0 && (
